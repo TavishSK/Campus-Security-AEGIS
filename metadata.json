@@ -1,0 +1,7 @@
+{
+  "name": "AEGIS Tactical Cyber-Ops Command Center",
+  "description": "Autonomous AI Campus Security Intelligence Platform featuring real-time signal ingestion, NLP context disambiguation, tactical radar, and human-in-the-loop triage.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
