@@ -18,6 +18,7 @@ threatLabRouter.post('/analyze', async (req, res) => {
 
     const analysis = await nlpEngine.analyze({
       text,
+      useGemini: true,
       contextWindowEnabled: contextWindowEnabled !== false,
       contextThread: contextThread || {
         preceding: [

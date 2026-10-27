@@ -77,6 +77,7 @@ class RealtimeFeedService {
       // Run real sentence through multi-stage NLP & Context engine
       const analysis = await nlpEngine.analyze({
         text: post.body,
+        useGemini: false,
         contextWindowEnabled: true,
         contextThread: {
           preceding: [

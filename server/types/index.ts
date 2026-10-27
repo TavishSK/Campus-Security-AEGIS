@@ -95,6 +95,7 @@ export interface CaseFile {
 export interface ThreatLabAnalysisRequest {
   text: string;
   contextWindowEnabled?: boolean;
+  useGemini?: boolean;
   contextThread?: {
     preceding?: Array<{ author: string; text: string; time: string }>;
     target?: string;

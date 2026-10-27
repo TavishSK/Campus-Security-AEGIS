@@ -92,6 +92,11 @@ async function startServer() {
   });
 }
 
-startServer().catch(err => {
-  console.error('[AEGIS Cyber-Ops] Server boot error:', err);
-});
+if (!process.env.VERCEL) {
+  startServer().catch(err => {
+    console.error('[AEGIS Cyber-Ops] Server boot error:', err);
+  });
+}
+
+export { app };
+export default app;

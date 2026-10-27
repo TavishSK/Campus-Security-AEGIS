@@ -44,6 +44,9 @@ const INTENT_DECLARATIONS = /\b(i'?m\s+gonna|i\s+am\s+going\s+to|i\s+will|finna|
 const HUMAN_TARGET_REFERENCES = /\b(someone|somebody|everyone|everybody|people|students|him|her|them|the teacher|the boss|the principal|the staff|you all)\b/i;
 
 export class NLPEngine {
+  private static geminiCooldownUntil = 0;
+  private static geminiCooldownLogged = false;
+
   /**
    * Main analysis execution with multi-stage pipeline gates
    */
@@ -55,9 +58,14 @@ export class NLPEngine {
     // Fast deterministic check first
     const deterministic = this.runDeterministicPipeline(text, request.contextThread, hasContext);
 
-    // If Gemini API is available and text is provided, attempt deep semantic reasoning
+    // Only attempt Gemini if explicitly requested (e.g., interactive Threat Lab scan),
+    // and if API key is present and quota is not currently exhausted.
+    // Routine background ingestion streams use the local AST engine to avoid consuming user quota.
+    const shouldAttemptGemini = request.useGemini === true &&
+      Boolean(genAI && process.env.GEMINI_API_KEY && text.length > 3 && Date.now() > NLPEngine.geminiCooldownUntil);
+
     let geminiResult: any = null;
-    if (genAI && process.env.GEMINI_API_KEY && text.length > 3) {
+    if (shouldAttemptGemini) {
       try {
         const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Gemini timeout')), 5000));
         geminiResult = await Promise.race([
@@ -65,7 +73,7 @@ export class NLPEngine {
           timeoutPromise,
         ]);
       } catch (err: any) {
-        console.warn('[AEGIS AI] Gemini inference notice (using neural AST):', err.message);
+        this.handleGeminiError(err);
       }
     }
 
@@ -379,6 +387,21 @@ Respond in strict JSON with keys:
 
     const parsed = JSON.parse(response.text || '{}');
     return parsed;
+  }
+
+  private handleGeminiError(err: any) {
+    const msg = String(err?.message || err || '');
+    const isQuotaError = msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED') || msg.includes('quota') || msg.includes('Quota exceeded');
+    if (isQuotaError) {
+      // Cooldown for 30 minutes before testing quota again
+      NLPEngine.geminiCooldownUntil = Date.now() + 30 * 60 * 1000;
+      if (!NLPEngine.geminiCooldownLogged) {
+        NLPEngine.geminiCooldownLogged = true;
+        console.info('[AEGIS AI] Gemini daily quota limit reached. Seamlessly engaging local AEGIS Neural AST Evasion Engine for line-rate forensic triage.');
+      }
+    } else {
+      console.warn('[AEGIS AI] Gemini inference notice (using neural AST):', msg);
+    }
   }
 }
 
